@@ -66,5 +66,5 @@
     "explorer.fileNesting.patterns": {
         "*.sln": "*.csproj"
     },
-    "dotnet.defaultSolution": "Graficas Unit.sln"
+    "dotnet.defaultSolution": "Graficas-Computacionales.sln"
 }
