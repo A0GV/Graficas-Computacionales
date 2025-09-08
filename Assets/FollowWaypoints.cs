@@ -1,10 +1,32 @@
+
+using System.Collections.Generic;
 using UnityEngine;
+
+
 
 public class FollowWaypoints : MonoBehaviour
 {
     public Transform[] waypoints;
     public float speed = 3f;
     private int currentWaypoint = 0;
+
+    // Diccionario para asociar nombre de waypoint y ángulo de rotación
+    private Dictionary<string, float> waypointRotations = new Dictionary<string, float>();
+
+    void Start()
+    {
+        // Agrega aquí los nombres y ángulos de rotación deseados
+        waypointRotations.Add("luisder", 80f);
+        waypointRotations.Add("luisizq", 260f);
+        waypointRotations.Add("chuyentra", -20f);
+        waypointRotations.Add("luisk", 90f);
+        waypointRotations.Add("kiel1", 20f);
+        waypointRotations.Add("kiel2", 20f);
+        waypointRotations.Add("kiel3", 20f);
+        waypointRotations.Add("chuyder", 110f);
+        waypointRotations.Add("chuyizq", -80f);
+        waypointRotations.Add("chuy5", 20f);
+    }
 
     void Update()
     {
@@ -15,6 +37,11 @@ public class FollowWaypoints : MonoBehaviour
 
         if (Vector3.Distance(transform.position, target.position) < 0.1f)
         {
+            // Buscar si el nombre del waypoint está en el diccionario
+            if (waypointRotations.ContainsKey(target.name))
+            {
+                transform.Rotate(0, waypointRotations[target.name], 0);
+            }
             currentWaypoint++;
             if (currentWaypoint >= waypoints.Length)
             {
