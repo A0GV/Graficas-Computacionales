@@ -26,6 +26,18 @@ public class FollowWaypoints : MonoBehaviour
         waypointRotations.Add("chuyder", 110f);
         waypointRotations.Add("chuyizq", -80f);
         waypointRotations.Add("chuy5", 20f);
+        waypointRotations.Add("ferizq", -45f);
+        waypointRotations.Add("ferizq1", -35f);
+        waypointRotations.Add("ferder", 40f);
+        waypointRotations.Add("ferder1", 50f);
+        waypointRotations.Add("fer5", -13f);
+        waypointRotations.Add("richizq", -40f);
+        waypointRotations.Add("richizq1", -40f);
+        waypointRotations.Add("ferentra", 7f);
+        waypointRotations.Add("richder", 55f);
+        waypointRotations.Add("richder1", 35f);
+
+
     }
 
     void Update()
