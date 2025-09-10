@@ -14,9 +14,15 @@ public class TCPIPServerAsync : MonoBehaviour
     Socket listener;
     Socket handler;
 
+    // Agrega referencia pública a CruceBehavior
+    public CruceBehavior cruceBehavior;
+
     void Start()
     {
         Application.runInBackground = true;
+        // Si no se asignó en el inspector, búscalo automáticamente
+        if (cruceBehavior == null)
+            cruceBehavior = FindFirstObjectByType<CruceBehavior>();
         startServer();
     }
 
@@ -98,6 +104,12 @@ public class TCPIPServerAsync : MonoBehaviour
                                     int pathId = int.Parse(pathIdStr);
                                     string spawnPosStr = cleanData.Substring(idxAt + 3).Trim();
                                     UnityEngine.Debug.Log($"[PARSE] path_id: {pathId}, spawn_pos: {spawnPosStr}");
+
+                                    // Encolar el pathId para spawn en CruceBehavior
+                                    if (cruceBehavior != null)
+                                    {
+                                        cruceBehavior.EnqueueCarToSpawn(pathId);
+                                    }
                                 }
                             }
                             catch (Exception ex)

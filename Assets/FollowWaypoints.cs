@@ -57,9 +57,8 @@ public class FollowWaypoints : MonoBehaviour
             currentWaypoint++;
             if (currentWaypoint >= waypoints.Length)
             {
-                // Opcional: repetir desde el inicio o detenerse
-                //currentWaypoint = 0; // Para hacer un loop
-                enabled = false;   // Para detenerse
+                // Destruye el objeto al llegar al último waypoint
+                Destroy(gameObject);
             }
         }
     }
