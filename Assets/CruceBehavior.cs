@@ -67,29 +67,41 @@ public class CruceBehavior : MonoBehaviour
                     break;
                 case CruceEventType.SemaforoVerde:
                     Debug.Log($"[EVENT] Cambiar semáforo a VERDE: {ev.semaforo}");
+                    SemaforoControl(ev.semaforo);
                     // TODO: Lógica real para cambiar el semáforo en Unity
                     break;
                 case CruceEventType.EarlySwitch:
                     Debug.Log($"[EVENT] Early switch a semáforo: {ev.semaforo}");
+                    SemaforoControl(ev.semaforo);
                     // TODO: Lógica real para early switch
                     break;
             }
         }
     }
 
+    // Ahora detenemos y avanzamos carros usando la bandera "detenido"
     public void SemaforoControl(int semaforo)
     {
-
-
-        
+        CarBehaviour1[] allCars = FindObjectsByType<CarBehaviour1>(FindObjectsSortMode.None);
+        foreach (var car in allCars)
+        {
+            var mover = car.GetComponent<FollowWaypoints>();
+            if (mover != null)
+            {
+                if (car.semaforoId == semaforo)
+                {
+                    mover.detenido = false;  // Avanzan los carros del semáforo actual
+                }
+                else
+                {
+                    mover.detenido = true;   // Se detienen los otros
+                }
+            }
+        }
     }
-    
-
-
 
     public void SpawnCarFromPathId(int pathId, Vector3 position)
     {
-
         Vector3 spawnPosition;
         float yRotation;
         if (pathId >= 1 && pathId <= 3)
@@ -135,7 +147,6 @@ public class CruceBehavior : MonoBehaviour
             return;
         }
 
-
         GameObject clon = Instantiate(prefab, spawnPosition, Quaternion.Euler(0, yRotation, 0));
         clon.transform.localScale = new Vector3(300, 300, 300);
 
@@ -157,6 +168,7 @@ public class CruceBehavior : MonoBehaviour
             {
                 fw.waypoints = config.waypoints;   // asigna directamente desde el inspector
                 fw.speed = 1000;   // ejemplo dinámico
+                fw.detenido = false; // Asegúrate que el nuevo carro inicia en movimiento
             }
         }
         else
@@ -166,5 +178,4 @@ public class CruceBehavior : MonoBehaviour
 
         Debug.Log($"Carro {carType} instanciado con pathId={pathId} y semaforo {carSL}");
     }
-
 }

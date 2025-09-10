@@ -168,9 +168,9 @@ public class TCPIPServerAsync : MonoBehaviour
                             }
                         }
                     }
-                    catch (SocketException ex)
+                    catch (SocketException)
                     {
-                        // Debug.Log($"Cliente desconectado: {ex.Message}");
+                        // Debug.Log($"Cliente desconectado");
                         keepReading = false;
                         break;
                     }

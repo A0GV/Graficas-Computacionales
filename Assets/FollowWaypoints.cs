@@ -1,14 +1,14 @@
-
 using System.Collections.Generic;
 using UnityEngine;
-
-
 
 public class FollowWaypoints : MonoBehaviour
 {
     public Transform[] waypoints;
     public float speed = 3f;
     private int currentWaypoint = 0;
+
+    // Nueva bandera pública para detener el carro
+    public bool detenido = false;
 
     // Diccionario para asociar nombre de waypoint y ángulo de rotación
     private Dictionary<string, float> waypointRotations = new Dictionary<string, float>();
@@ -36,12 +36,12 @@ public class FollowWaypoints : MonoBehaviour
         waypointRotations.Add("ferentra", 7f);
         waypointRotations.Add("richder", 55f);
         waypointRotations.Add("richder1", 35f);
-
-
     }
 
     void Update()
     {
+        if (detenido) return; // Si está detenido, no se mueve
+
         if (waypoints == null || waypoints.Length == 0) return;
 
         Transform target = waypoints[currentWaypoint];
