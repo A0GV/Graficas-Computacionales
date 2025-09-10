@@ -17,6 +17,10 @@ public class TCPIPServerAsync : MonoBehaviour
     // Agrega referencia pública a CruceBehavior
     public CruceBehavior cruceBehavior;
 
+    // ====== NUEVO: Guardar último semáforo verde recibido ======
+    private int? ultimoSemaforoVerde = null;
+    // ===========================================================
+
     void Start()
     {
         Application.runInBackground = true;
@@ -84,16 +88,13 @@ public class TCPIPServerAsync : MonoBehaviour
                             break;
                         }
                         string data = System.Text.Encoding.ASCII.GetString(bytes, 0, bytesRec);
-                        UnityEngine.Debug.Log($"Mensaje recibido: {data}");
+                        //UnityEngine.Debug.Log($"Mensaje recibido: {data}");
                         // Parsear mensaje tipo: Spawn {path_id} ({path.turn_type}) from {direction} at {spawn_pos}$
-                        if (data.StartsWith("Spawn "))
+                        string cleanData = data.TrimEnd('$', '\n', '\r');
+                        if (cleanData.StartsWith("Spawn "))
                         {
                             try
                             {
-                                // Ejemplo: Spawn 9 (right) from south at (16, -8)$
-                                // Quitar el $ final si existe
-                                string cleanData = data.TrimEnd('$', '\n', '\r');
-                                // Buscar "Spawn " y " ("
                                 int idxPath = cleanData.IndexOf(' ');
                                 int idxParen = cleanData.IndexOf('(');
                                 int idxFrom = cleanData.IndexOf("from ");
@@ -105,16 +106,65 @@ public class TCPIPServerAsync : MonoBehaviour
                                     string spawnPosStr = cleanData.Substring(idxAt + 3).Trim();
                                     UnityEngine.Debug.Log($"[PARSE] path_id: {pathId}, spawn_pos: {spawnPosStr}");
 
-                                    // Encolar el pathId para spawn en CruceBehavior
+                                    // ==== CAMBIO: Encolar evento general ====
                                     if (cruceBehavior != null)
                                     {
-                                        cruceBehavior.EnqueueCarToSpawn(pathId);
+                                        cruceBehavior.EnqueueEvent(new CruceEvent { type = CruceEventType.CarSpawn, pathId = pathId });
                                     }
                                 }
                             }
                             catch (Exception ex)
                             {
                                 UnityEngine.Debug.Log($"[PARSE ERROR] {ex.Message}");
+                            }
+                        }
+                        // Parsear mensaje tipo: Verde: {n}$
+                        else if (cleanData.StartsWith("Verde: "))
+                        {
+                            try
+                            {
+                                string numStr = cleanData.Substring("Verde: ".Length).Trim();
+                                int semaforo = int.Parse(numStr);
+                                // Solo mostrar y encolar si el semáforo cambió
+                                if (ultimoSemaforoVerde == null || semaforo != ultimoSemaforoVerde)
+                                {
+                                    ultimoSemaforoVerde = semaforo;
+                                    UnityEngine.Debug.Log($"[PARSE] Semáforo activo: {semaforo}");
+                                    if (cruceBehavior != null)
+                                    {
+                                        cruceBehavior.EnqueueEvent(new CruceEvent { type = CruceEventType.SemaforoVerde, semaforo = semaforo });
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                UnityEngine.Debug.Log($"[PARSE ERROR Verde] {ex.Message}");
+                            }
+                        }
+                        // Parsear mensaje tipo: Early switch from {a} to {b}: ...
+                        else if (cleanData.StartsWith("Early switch from "))
+                        {
+                            try
+                            {
+                                // Ejemplo: Early switch from 1 to 2: ...
+                                int idxFrom = cleanData.IndexOf("from ") + 5;
+                                int idxTo = cleanData.IndexOf("to ", idxFrom);
+                                int idxColon = cleanData.IndexOf(":", idxTo);
+                                if (idxFrom > 0 && idxTo > idxFrom && idxColon > idxTo)
+                                {
+                                    string nextLightStr = cleanData.Substring(idxTo + 3, idxColon - (idxTo + 3)).Trim();
+                                    int nextLightId = int.Parse(nextLightStr);
+                                    UnityEngine.Debug.Log($"[PARSE] Early switch, next_light_id: {nextLightId}");
+                                    // ==== CAMBIO: Encolar evento general ====
+                                    if (cruceBehavior != null)
+                                    {
+                                        cruceBehavior.EnqueueEvent(new CruceEvent { type = CruceEventType.EarlySwitch, semaforo = nextLightId });
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                UnityEngine.Debug.Log($"[PARSE ERROR Early switch] {ex.Message}");
                             }
                         }
                     }

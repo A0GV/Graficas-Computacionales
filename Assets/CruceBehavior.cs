@@ -1,18 +1,28 @@
 using System.Collections.Generic;
 using UnityEngine;
-
 using System.Collections.Concurrent;
+public enum CruceEventType
+{
+    CarSpawn,
+    SemaforoVerde,
+    EarlySwitch
+}
+
+public class CruceEvent
+{
+    public CruceEventType type;
+    public int pathId;     // Para CarSpawn
+    public int semaforo;   // Para SemaforoVerde y EarlySwitch
+}
+
 public class CruceBehavior : MonoBehaviour
 {
     public TCPIPServerAsync server;
 
-    // Lista de prefabs en el mismo orden que los tipos de carro
     public List<GameObject> carPrefabs;
 
-    // Lista configurable desde el Inspector
     public List<PathConfig> pathConfigs;
 
-    // Diccionario de tipos de carro por path_id
     private Dictionary<int, string> carTypes = new Dictionary<int, string>() {
         {1, "chuygarcia"}, {2, "chuyelizondo"}, {3, "chuycovarrubias"},
         {4, "fercantu"}, {5, "fercovarrubias"}, {6, "ferelizondo"},
@@ -20,13 +30,11 @@ public class CruceBehavior : MonoBehaviour
         {10, "luiskiel"}, {11, "richelizondo"}, {12, "richiegarcia"}, {13, "richcantu"}
     };
 
-    // Cola thread-safe para pathIds pendientes de spawn
-    private ConcurrentQueue<int> carsToSpawn = new ConcurrentQueue<int>();
+    private ConcurrentQueue<CruceEvent> eventos = new ConcurrentQueue<CruceEvent>();
 
-    // Método público para que el servidor encole un pathId
-    public void EnqueueCarToSpawn(int pathId)
+    public void EnqueueEvent(CruceEvent ev)
     {
-        carsToSpawn.Enqueue(pathId);
+        eventos.Enqueue(ev);
     }
 
     void Start()
@@ -42,19 +50,29 @@ public class CruceBehavior : MonoBehaviour
 
     void Update()
     {
-        int pathId;
-        // Procesa TODOS los pendientes en la cola este frame
-        while (carsToSpawn.TryDequeue(out pathId))
+        CruceEvent ev;
+        while (eventos.TryDequeue(out ev))
         {
-            SpawnCarFromPathId(pathId, Vector3.zero);
+            switch (ev.type)
+            {
+                case CruceEventType.CarSpawn:
+                    SpawnCarFromPathId(ev.pathId, Vector3.zero);
+                    break;
+                case CruceEventType.SemaforoVerde:
+                    Debug.Log($"[EVENT] Cambiar semáforo a VERDE: {ev.semaforo}");
+                    // TODO: Lógica real para cambiar el semáforo en Unity
+                    break;
+                case CruceEventType.EarlySwitch:
+                    Debug.Log($"[EVENT] Early switch a semáforo: {ev.semaforo}");
+                    // TODO: Lógica real para early switch
+                    break;
+            }
         }
     }
 
-    // Llama a este método para crear un carro según el path_id y la posición
     public void SpawnCarFromPathId(int pathId, Vector3 position)
     {
 
-        // Determinar punto de spawn y rotación según el rango de pathId
         Vector3 spawnPosition;
         float yRotation;
         if (pathId >= 1 && pathId <= 3)
