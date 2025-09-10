@@ -67,12 +67,12 @@ public class CruceBehavior : MonoBehaviour
                     break;
                 case CruceEventType.SemaforoVerde:
                     Debug.Log($"[EVENT] Cambiar semáforo a VERDE: {ev.semaforo}");
-                    SemaforoControl(ev.semaforo);
+                    SemaforoControl();
                     // TODO: Lógica real para cambiar el semáforo en Unity
                     break;
                 case CruceEventType.EarlySwitch:
                     Debug.Log($"[EVENT] Early switch a semáforo: {ev.semaforo}");
-                    SemaforoControl(ev.semaforo);
+                    SemaforoControl();
                     // TODO: Lógica real para early switch
                     break;
             }
@@ -80,7 +80,7 @@ public class CruceBehavior : MonoBehaviour
     }
 
     // Ahora detenemos y avanzamos carros usando la bandera "detenido"
-    public void SemaforoControl(int semaforo)
+    public void SemaforoControl()
     {
         CarBehaviour1[] allCars = FindObjectsByType<CarBehaviour1>(FindObjectsSortMode.None);
         foreach (var car in allCars)
@@ -88,13 +88,15 @@ public class CruceBehavior : MonoBehaviour
             var mover = car.GetComponent<FollowWaypoints>();
             if (mover != null)
             {
-                if (car.semaforoId == semaforo)
+                // Ejemplo: detener solo los carros cuyo pathId corresponde al semáforo recibido
+                // Aquí puedes cambiar la lógica según el semáforo activo
+                if (car.pathId == 11) // <-- aquí puedes usar una variable para el semáforo activo
                 {
-                    mover.detenido = false;  // Avanzan los carros del semáforo actual
+                    mover.detenido = true;
                 }
                 else
                 {
-                    mover.detenido = true;   // Se detienen los otros
+                    mover.detenido = false;
                 }
             }
         }
@@ -150,14 +152,16 @@ public class CruceBehavior : MonoBehaviour
         GameObject clon = Instantiate(prefab, spawnPosition, Quaternion.Euler(0, yRotation, 0));
         clon.transform.localScale = new Vector3(300, 300, 300);
 
-        // CarBehavior opcional (para datos extra)
+        // Asegura que el clon tenga CarBehaviour1
         CarBehaviour1 carScript = clon.GetComponent<CarBehaviour1>();
-        if (carScript != null)
+        if (carScript == null)
         {
-            carScript.pathId = pathId;
-            carScript.nombre = carType;
-            carScript.semaforoId = carSL;
+            carScript = clon.AddComponent<CarBehaviour1>();
+            //Debug.LogWarning($"[AUTO] Se agregó CarBehaviour1 al carro instanciado {carType}");
         }
+        carScript.pathId = pathId;
+        carScript.nombre = carType;
+        carScript.semaforoId = carSL;
 
         // Buscar el PathConfig correspondiente
         PathConfig config = pathConfigs.Find(c => c.pathId == pathId);
