@@ -37,7 +37,7 @@ public class CruceBehavior : MonoBehaviour
         }
         // Prueba: crear un cubo que siga el path 1 desde el origen
         //SpawnCubeFromPathId(1, new Vector3(0, 0, 0));
-        //SpawnCarFromPathId(11, new Vector3(9725f, 0.0001460083f, -3921f));
+        //SpawnCarFromPathId(12, new Vector3(5829f, 0.0001460083f, 1038f));
     }
 
     void Update()
