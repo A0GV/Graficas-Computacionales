@@ -71,9 +71,9 @@ public class TCPIPServerAsync : MonoBehaviour
             Debug.Log("Servidor TCP escuchando en " + localEndPoint.ToString());
             while (true)
             {
-                Debug.Log("Waiting for Connection");
+                //Debug.Log("Waiting for Connection");
                 handler = listener.Accept();
-                Debug.Log("Client Connected");
+                // Debug.Log("Client Connected");
                 keepReading = true;
                 while (keepReading && handler != null && handler.Connected)
                 {
@@ -83,7 +83,7 @@ public class TCPIPServerAsync : MonoBehaviour
                         int bytesRec = handler.Receive(bytes);
                         if (bytesRec <= 0)
                         {
-                            Debug.Log("Cliente desconectado");
+                            // Debug.Log("Cliente desconectado");
                             keepReading = false;
                             break;
                         }
@@ -170,7 +170,7 @@ public class TCPIPServerAsync : MonoBehaviour
                     }
                     catch (SocketException ex)
                     {
-                        Debug.Log($"Cliente desconectado: {ex.Message}");
+                        // Debug.Log($"Cliente desconectado: {ex.Message}");
                         keepReading = false;
                         break;
                     }
@@ -195,7 +195,7 @@ public class TCPIPServerAsync : MonoBehaviour
                     }
                     handler = null;
                 }
-                Debug.Log("Conexión cerrada, esperando nueva conexión...");
+                // Debug.Log("Conexión cerrada, esperando nueva conexión...");
             }
         }
         catch (Exception e)

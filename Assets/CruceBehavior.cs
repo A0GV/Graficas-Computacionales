@@ -26,8 +26,15 @@ public class CruceBehavior : MonoBehaviour
     private Dictionary<int, string> carTypes = new Dictionary<int, string>() {
         {1, "chuygarcia"}, {2, "chuyelizondo"}, {3, "chuycovarrubias"},
         {4, "fercantu"}, {5, "fercovarrubias"}, {6, "ferelizondo"},
-        {7, "luisgarcia"}, {8, "luiscantu"}, {9, "luiscovarrubias"},
-        {10, "luiskiel"}, {11, "richelizondo"}, {12, "richiegarcia"}, {13, "richcantu"}
+        {7, "luisgarcia"}, {8, "luiscantu"}, {9, "luiscovarrubias"}, {10, "luiskiel"},
+        { 11, "richelizondo"}, {12, "richiegarcia"}, {13, "richcantu"}
+    };
+
+    private Dictionary<int, int> carStoplights = new Dictionary<int, int>() {
+        {1, 1}, {2, 1}, {3, 1},
+        {4, 2}, {5, 2}, {6, 2},
+        {7, 3}, {8, 3}, {9, 3}, {10, 3},
+        { 11, 4}, {12, 4}, {13, 4}
     };
 
     private ConcurrentQueue<CruceEvent> eventos = new ConcurrentQueue<CruceEvent>();
@@ -70,6 +77,16 @@ public class CruceBehavior : MonoBehaviour
         }
     }
 
+    public void SemaforoControl(int semaforo)
+    {
+
+
+        
+    }
+    
+
+
+
     public void SpawnCarFromPathId(int pathId, Vector3 position)
     {
 
@@ -109,6 +126,7 @@ public class CruceBehavior : MonoBehaviour
             return;
         }
         string carType = carTypes[pathId];
+        int carSL = carStoplights[pathId];
         GameObject prefab = carPrefabs.Find(p => p != null && p.name == carType);
 
         if (prefab == null)
@@ -118,8 +136,8 @@ public class CruceBehavior : MonoBehaviour
         }
 
 
-    GameObject clon = Instantiate(prefab, spawnPosition, Quaternion.Euler(0, yRotation, 0));
-    clon.transform.localScale = new Vector3(300, 300, 300);
+        GameObject clon = Instantiate(prefab, spawnPosition, Quaternion.Euler(0, yRotation, 0));
+        clon.transform.localScale = new Vector3(300, 300, 300);
 
         // CarBehavior opcional (para datos extra)
         CarBehaviour1 carScript = clon.GetComponent<CarBehaviour1>();
@@ -127,6 +145,7 @@ public class CruceBehavior : MonoBehaviour
         {
             carScript.pathId = pathId;
             carScript.nombre = carType;
+            carScript.semaforoId = carSL;
         }
 
         // Buscar el PathConfig correspondiente
@@ -145,7 +164,7 @@ public class CruceBehavior : MonoBehaviour
             Debug.LogWarning($"No se encontró configuración de waypoints para pathId {pathId}");
         }
 
-        Debug.Log($"Carro {carType} instanciado con pathId={pathId}");
+        Debug.Log($"Carro {carType} instanciado con pathId={pathId} y semaforo {carSL}");
     }
 
 }
