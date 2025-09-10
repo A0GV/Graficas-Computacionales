@@ -6,7 +6,10 @@ public class CruceBehavior : MonoBehaviour
     public TCPIPServerAsync server;
 
     // Lista de prefabs en el mismo orden que los tipos de carro
-    public List<GameObject> carPrefabs; 
+    public List<GameObject> carPrefabs;
+
+    // Lista configurable desde el Inspector
+    public List<PathConfig> pathConfigs;
 
     // Diccionario de tipos de carro por path_id
     private Dictionary<int, string> carTypes = new Dictionary<int, string>() {
@@ -23,7 +26,7 @@ public class CruceBehavior : MonoBehaviour
             server = FindFirstObjectByType<TCPIPServerAsync>();
         }
         // // Prueba manual (no sirve)
-        // SpawnCarFromPathId(1, new Vector3(0, 0, 0));
+        SpawnCarFromPathId(1, new Vector3(-20, 0, -0.42f));
     }
 
     // Llama a este método para crear un carro según el path_id y la posición
@@ -37,18 +40,41 @@ public class CruceBehavior : MonoBehaviour
             return;
         }
         string carType = carTypes[pathId];
-        if (carPrefabs == null || carPrefabs.Count == 0)
-        {
-            Debug.LogWarning($"Lista de prefabs vacía o no asignada");
-            return;
-        }
         GameObject prefab = carPrefabs.Find(p => p != null && p.name == carType);
+
         if (prefab == null)
         {
             Debug.LogWarning($"No se encontró prefab con nombre {carType}");
             return;
         }
-        Instantiate(prefab, debugPosition, Quaternion.identity);
-        Debug.Log($"Carro {carType} instanciado en {debugPosition} (vector original: {position})");
+
+        GameObject clon = Instantiate(prefab, position, Quaternion.identity);
+
+        // CarBehavior opcional (para datos extra)
+        CarBehaviour1 carScript = clon.GetComponent<CarBehaviour1>();
+        if (carScript != null)
+        {
+            carScript.pathId = pathId;
+            carScript.nombre = carType;
+        }
+
+        // Buscar el PathConfig correspondiente
+        PathConfig config = pathConfigs.Find(c => c.pathId == pathId);
+        if (config != null)
+        {
+            FollowWaypoints fw = clon.GetComponent<FollowWaypoints>();
+            if (fw != null)
+            {
+                fw.waypoints = config.waypoints;   // asigna directamente desde el inspector
+                fw.speed = 1000;   // ejemplo dinámico
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"No se encontró configuración de waypoints para pathId {pathId}");
+        }
+
+        Debug.Log($"Carro {carType} instanciado con pathId={pathId}");
     }
+
 }

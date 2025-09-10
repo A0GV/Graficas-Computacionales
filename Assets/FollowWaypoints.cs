@@ -42,7 +42,7 @@ public class FollowWaypoints : MonoBehaviour
 
     void Update()
     {
-        if (waypoints.Length == 0) return;
+        if (waypoints == null || waypoints.Length == 0) return;
 
         Transform target = waypoints[currentWaypoint];
         transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
