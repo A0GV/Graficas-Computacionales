@@ -79,7 +79,32 @@ public class TCPIPServerAsync : MonoBehaviour
                         }
                         string data = System.Text.Encoding.ASCII.GetString(bytes, 0, bytesRec);
                         UnityEngine.Debug.Log($"Mensaje recibido: {data}");
-                        // Aquí podrías procesar el mensaje y responder si lo deseas
+                        // Parsear mensaje tipo: Spawn {path_id} ({path.turn_type}) from {direction} at {spawn_pos}$
+                        if (data.StartsWith("Spawn "))
+                        {
+                            try
+                            {
+                                // Ejemplo: Spawn 9 (right) from south at (16, -8)$
+                                // Quitar el $ final si existe
+                                string cleanData = data.TrimEnd('$', '\n', '\r');
+                                // Buscar "Spawn " y " ("
+                                int idxPath = cleanData.IndexOf(' ');
+                                int idxParen = cleanData.IndexOf('(');
+                                int idxFrom = cleanData.IndexOf("from ");
+                                int idxAt = cleanData.IndexOf("at ");
+                                if (idxPath > -1 && idxParen > idxPath && idxFrom > idxParen && idxAt > idxFrom)
+                                {
+                                    string pathIdStr = cleanData.Substring(idxPath + 1, idxParen - idxPath - 2).Trim();
+                                    int pathId = int.Parse(pathIdStr);
+                                    string spawnPosStr = cleanData.Substring(idxAt + 3).Trim();
+                                    UnityEngine.Debug.Log($"[PARSE] path_id: {pathId}, spawn_pos: {spawnPosStr}");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                UnityEngine.Debug.Log($"[PARSE ERROR] {ex.Message}");
+                            }
+                        }
                     }
                     catch (SocketException ex)
                     {
