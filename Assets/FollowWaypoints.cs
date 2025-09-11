@@ -16,7 +16,7 @@ public class FollowWaypoints : MonoBehaviour
     // Referencia al controlador de semáforos
     private SemaforoController semaforoCtrl;
 
-    public float distanciaSegura = 2.5f;
+    public float distanciaSegura = 3f;
 
     // Diccionario para asociar nombre de waypoint y ángulo de rotación
     private Dictionary<string, float> waypointRotations = new Dictionary<string, float>();
@@ -80,8 +80,12 @@ public class FollowWaypoints : MonoBehaviour
 
     void Update()
     {
+        
         // --- LÓGICA DE SEMÁFORO ---
-        if (semaforoCtrl != null && !semaforoCtrl.PuedeAvanzar(semaforoId) && CercaDeLineaAlto())
+        bool puedeAvanzar = semaforoCtrl != null && semaforoCtrl.PuedeAvanzar(semaforoId);
+        bool cercaAlto = CercaDeLineaAlto();
+
+        if (semaforoCtrl != null && !puedeAvanzar && cercaAlto)
         {
             detenido = true;
         }
@@ -90,25 +94,31 @@ public class FollowWaypoints : MonoBehaviour
             detenido = false;
         }
 
-        if (detenido) return;
         if (waypoints == null || waypoints.Length == 0) return;
-
-        Transform target = waypoints[currentWaypoint];
 
         // --- Nuevo: OverlapSphere para detectar autos delante ---
         Vector3 puntoDelante = transform.position + transform.forward * distanciaSegura;
         Collider[] hits = Physics.OverlapSphere(puntoDelante, 1f);
+        bool hayCarroAdelante = false;
         foreach (var hit in hits)
         {
             if (hit.CompareTag("Car") && hit.gameObject != gameObject)
             {
-                detenido = true;
-                return;
+                hayCarroAdelante = true;
+                break;
             }
         }
-        detenido = false;
+
+        // SOLO DETENIDO por carro si el semáforo está en rojo o si aún no puede avanzar
+        if (hayCarroAdelante && !puedeAvanzar)
+        {
+            detenido = true;
+        }
+
+        if (detenido) return;
 
         // Movimiento usando Rigidbody kinemático
+        Transform target = waypoints[currentWaypoint];
         transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
 
         // Giro al llegar al waypoint
@@ -123,7 +133,8 @@ public class FollowWaypoints : MonoBehaviour
             {
                 Destroy(gameObject);
             }
-        }
+        
+    }
     }
 
     bool CercaDeLineaAlto()

@@ -14,13 +14,45 @@ public class SemaforoController : MonoBehaviour
 
     public void CambiarAVerde(int semaforoId)
     {
-        var keys = new List<int>(estados.Keys);
-        foreach (var key in keys)
+        // var keys = new List<int>(estados.Keys);
+        // foreach (var key in keys)
+        // {
+        //     estados[key] = "rojo";
+        // }
+        // estados[semaforoId] = "verde";
+        if (semaforoId == 1)
         {
-            estados[key] = "rojo";
+            estados[1] = "verde";
+            estados[2] = "rojo";
+            estados[3] = "rojo";
+            estados[4] = "rojo";
+            Debug.Log($"[Semaforo] Semáforo {semaforoId} ahora en {estados[1]}");
         }
-        estados[semaforoId] = "verde";
-        Debug.Log($"[Semaforo] Semáforo {semaforoId} cambiado a VERDE");
+        if (semaforoId == 2)
+        {
+            estados[1] = "rojo";
+            estados[2] = "verde";
+            estados[3] = "rojo";
+            estados[4] = "rojo";
+            Debug.Log($"[Semaforo] Semáforo {semaforoId} ahora en {estados[2]}");
+        }
+        if (semaforoId == 3)
+        {
+            estados[1] = "rojo";
+            estados[2] = "rojo";
+            estados[3] = "verde";
+            estados[4] = "rojo";
+            Debug.Log($"[Semaforo] Semáforo {semaforoId} ahora en {estados[3]}");
+        }
+        if (semaforoId == 4)
+        {
+            estados[1] = "rojo";
+            estados[2] = "rojo";
+            estados[3] = "rojo";
+            estados[4] = "verde";
+            Debug.Log($"[Semaforo] Semáforo {semaforoId} ahora en {estados[4]}");
+        }
+        
     }
 
     public bool PuedeAvanzar(int semaforoId)

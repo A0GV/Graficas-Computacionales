@@ -73,6 +73,8 @@ public class CruceBehavior : MonoBehaviour
                     break;
                 case CruceEventType.EarlySwitch:
                     Debug.Log($"[EVENT] Early switch a semáforo: {ev.semaforo}");
+                    if (semaforoController != null)
+                        semaforoController.CambiarAVerde(ev.semaforo);
                     // Si quieres hacer algo especial para early switch, agrégalo aquí
                     break;
             }
@@ -205,6 +207,6 @@ public class CruceBehavior : MonoBehaviour
             Debug.LogWarning($"No se encontró configuración de waypoints para pathId {pathId}");
         }
 
-        Debug.Log($"Carro {carType} instanciado con pathId={pathId} y semaforo {carSL}");
+        //Debug.Log($"Carro {carType} instanciado con pathId={pathId} y semaforo {carSL}");
     }
 }
