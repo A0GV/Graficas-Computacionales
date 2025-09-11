@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Collections.Concurrent;
+
 public enum CruceEventType
 {
     CarSpawn,
@@ -18,23 +19,23 @@ public class CruceEvent
 public class CruceBehavior : MonoBehaviour
 {
     public TCPIPServerAsync server;
+    public SemaforoController semaforoController; // Asignar en el inspector o en Start()
 
     public List<GameObject> carPrefabs;
-
     public List<PathConfig> pathConfigs;
 
     private Dictionary<int, string> carTypes = new Dictionary<int, string>() {
         {1, "chuygarcia"}, {2, "chuyelizondo"}, {3, "chuycovarrubias"},
         {4, "fercantu"}, {5, "fercovarrubias"}, {6, "ferelizondo"},
         {7, "luisgarcia"}, {8, "luiscantu"}, {9, "luiscovarrubias"}, {10, "luiskiel"},
-        { 11, "richelizondo"}, {12, "richiegarcia"}, {13, "richcantu"}
+        {11, "richelizondo"}, {12, "richiegarcia"}, {13, "richcantu"}
     };
 
     private Dictionary<int, int> carStoplights = new Dictionary<int, int>() {
         {1, 1}, {2, 1}, {3, 1},
         {4, 2}, {5, 2}, {6, 2},
         {7, 3}, {8, 3}, {9, 3}, {10, 3},
-        { 11, 4}, {12, 4}, {13, 4}
+        {11, 4}, {12, 4}, {13, 4}
     };
 
     private ConcurrentQueue<CruceEvent> eventos = new ConcurrentQueue<CruceEvent>();
@@ -50,9 +51,10 @@ public class CruceBehavior : MonoBehaviour
         {
             server = FindFirstObjectByType<TCPIPServerAsync>();
         }
-        // Prueba: crear un cubo que siga el path 1 desde el origen
-        //SpawnCubeFromPathId(1, new Vector3(0, 0, 0));
-        //SpawnCarFromPathId(12, new Vector3(5829f, 0.0001460083f, 1038f));
+        if (semaforoController == null)
+        {
+            semaforoController = FindFirstObjectByType<SemaforoController>();
+        }
     }
 
     void Update()
@@ -66,36 +68,15 @@ public class CruceBehavior : MonoBehaviour
                     SpawnCarFromPathId(ev.pathId, Vector3.zero);
                     break;
                 case CruceEventType.SemaforoVerde:
-                    Debug.Log($"[EVENT] Cambiar semáforo a VERDE: {ev.semaforo}");
-                    SemaforoControl(ev.semaforo);
-                    // TODO: Lógica real para cambiar el semáforo en Unity
+                    if (semaforoController != null)
+                        semaforoController.CambiarAVerde(ev.semaforo);
                     break;
                 case CruceEventType.EarlySwitch:
                     Debug.Log($"[EVENT] Early switch a semáforo: {ev.semaforo}");
-                    SemaforoControl(ev.semaforo);
-                    // TODO: Lógica real para early switch
+                    if (semaforoController != null)
+                        semaforoController.CambiarAVerde(ev.semaforo);
+                    // Si quieres hacer algo especial para early switch, agrégalo aquí
                     break;
-            }
-        }
-    }
-
-    // Ahora detenemos y avanzamos carros usando la bandera "detenido"
-    public void SemaforoControl(int semaforo)
-    {
-        CarBehaviour1[] allCars = FindObjectsByType<CarBehaviour1>(FindObjectsSortMode.None);
-        foreach (var car in allCars)
-        {
-            var mover = car.GetComponent<FollowWaypoints>();
-            if (mover != null)
-            {
-                if (car.semaforoId == semaforo)
-                {
-                    mover.detenido = false;  // Avanzan los carros del semáforo actual
-                }
-                else
-                {
-                    mover.detenido = true;   // Se detienen los otros
-                }
             }
         }
     }
@@ -149,15 +130,64 @@ public class CruceBehavior : MonoBehaviour
 
         GameObject clon = Instantiate(prefab, spawnPosition, Quaternion.Euler(0, yRotation, 0));
         clon.transform.localScale = new Vector3(300, 300, 300);
+        clon.tag = "Car";
 
-        // CarBehavior opcional (para datos extra)
-        CarBehaviour1 carScript = clon.GetComponent<CarBehaviour1>();
-        if (carScript != null)
+        // si el clon o sus hijos ya tienen colliders, no agregar otro (evita duplicados)
+        Collider[] existing = clon.GetComponentsInChildren<Collider>();
+        if (existing == null || existing.Length == 0)
         {
-            carScript.pathId = pathId;
-            carScript.nombre = carType;
-            carScript.semaforoId = carSL;
+            // agregar BoxCollider al root y ajustarlo automáticamente al tamaño del modelo
+            BoxCollider bc = clon.GetComponent<BoxCollider>();
+            if (bc == null) bc = clon.AddComponent<BoxCollider>();
+
+            // calcular bounds combinados de todos los renderers (world space)
+            Renderer[] rends = clon.GetComponentsInChildren<Renderer>();
+            if (rends != null && rends.Length > 0)
+            {
+                Bounds combined = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++)
+                    combined.Encapsulate(rends[i].bounds);
+
+                // convertir tamaño world -> local (tener en cuenta la escala del objeto)
+                Vector3 lossy = clon.transform.lossyScale;
+                Vector3 localSize = new Vector3(
+                    combined.size.x / (Mathf.Approximately(lossy.x, 0f) ? 1f : lossy.x),
+                    combined.size.y / (Mathf.Approximately(lossy.y, 0f) ? 1f : lossy.y),
+                    combined.size.z / (Mathf.Approximately(lossy.z, 0f) ? 1f : lossy.z)
+                );
+
+                bc.size = localSize;
+                bc.center = clon.transform.InverseTransformPoint(combined.center);
+            }
+            else
+            {
+                // fallback si no hay Renderers (ajusta a lo que necesites)
+                bc.size = new Vector3(1f, 1f, 2f);
+                bc.center = Vector3.zero;
+            }
+
+            bc.isTrigger = false; // normalmente false para raycasts/colisiones físicas
         }
+
+        // (opcional) asegurar un Rigidbody kinemático para que las queries físicas funcionen bien
+        Rigidbody rb = clon.GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = clon.AddComponent<Rigidbody>();
+            rb.isKinematic = true; // movemos con transform, no con física
+            rb.useGravity = false;
+        }
+
+
+        // Asegura que el clon tenga CarBehaviour1
+        CarBehaviour1 carScript = clon.GetComponent<CarBehaviour1>();
+        if (carScript == null)
+        {
+            carScript = clon.AddComponent<CarBehaviour1>();
+        }
+        carScript.pathId = pathId;
+        carScript.nombre = carType;
+        carScript.semaforoId = carSL;
 
         // Buscar el PathConfig correspondiente
         PathConfig config = pathConfigs.Find(c => c.pathId == pathId);
@@ -166,9 +196,10 @@ public class CruceBehavior : MonoBehaviour
             FollowWaypoints fw = clon.GetComponent<FollowWaypoints>();
             if (fw != null)
             {
-                fw.waypoints = config.waypoints;   // asigna directamente desde el inspector
-                fw.speed = 1000;   // ejemplo dinámico
-                fw.detenido = false; // Asegúrate que el nuevo carro inicia en movimiento
+                fw.waypoints = config.waypoints;
+                fw.speed = 1000;
+                fw.detenido = false;
+                fw.semaforoId = carSL; // ¡IMPORTANTE!
             }
         }
         else
@@ -176,6 +207,6 @@ public class CruceBehavior : MonoBehaviour
             Debug.LogWarning($"No se encontró configuración de waypoints para pathId {pathId}");
         }
 
-        Debug.Log($"Carro {carType} instanciado con pathId={pathId} y semaforo {carSL}");
+        //Debug.Log($"Carro {carType} instanciado con pathId={pathId} y semaforo {carSL}");
     }
 }
