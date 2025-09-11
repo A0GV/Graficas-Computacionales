@@ -128,6 +128,54 @@ public class CruceBehavior : MonoBehaviour
 
         GameObject clon = Instantiate(prefab, spawnPosition, Quaternion.Euler(0, yRotation, 0));
         clon.transform.localScale = new Vector3(300, 300, 300);
+        clon.tag = "Car";
+
+        // si el clon o sus hijos ya tienen colliders, no agregar otro (evita duplicados)
+        Collider[] existing = clon.GetComponentsInChildren<Collider>();
+        if (existing == null || existing.Length == 0)
+        {
+            // agregar BoxCollider al root y ajustarlo automáticamente al tamaño del modelo
+            BoxCollider bc = clon.GetComponent<BoxCollider>();
+            if (bc == null) bc = clon.AddComponent<BoxCollider>();
+
+            // calcular bounds combinados de todos los renderers (world space)
+            Renderer[] rends = clon.GetComponentsInChildren<Renderer>();
+            if (rends != null && rends.Length > 0)
+            {
+                Bounds combined = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++)
+                    combined.Encapsulate(rends[i].bounds);
+
+                // convertir tamaño world -> local (tener en cuenta la escala del objeto)
+                Vector3 lossy = clon.transform.lossyScale;
+                Vector3 localSize = new Vector3(
+                    combined.size.x / (Mathf.Approximately(lossy.x, 0f) ? 1f : lossy.x),
+                    combined.size.y / (Mathf.Approximately(lossy.y, 0f) ? 1f : lossy.y),
+                    combined.size.z / (Mathf.Approximately(lossy.z, 0f) ? 1f : lossy.z)
+                );
+
+                bc.size = localSize;
+                bc.center = clon.transform.InverseTransformPoint(combined.center);
+            }
+            else
+            {
+                // fallback si no hay Renderers (ajusta a lo que necesites)
+                bc.size = new Vector3(1f, 1f, 2f);
+                bc.center = Vector3.zero;
+            }
+
+            bc.isTrigger = false; // normalmente false para raycasts/colisiones físicas
+        }
+
+        // (opcional) asegurar un Rigidbody kinemático para que las queries físicas funcionen bien
+        Rigidbody rb = clon.GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = clon.AddComponent<Rigidbody>();
+            rb.isKinematic = true; // movemos con transform, no con física
+            rb.useGravity = false;
+        }
+
 
         // Asegura que el clon tenga CarBehaviour1
         CarBehaviour1 carScript = clon.GetComponent<CarBehaviour1>();

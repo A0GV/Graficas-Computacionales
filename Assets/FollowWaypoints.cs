@@ -16,16 +16,40 @@ public class FollowWaypoints : MonoBehaviour
     // Referencia al controlador de semáforos
     private SemaforoController semaforoCtrl;
 
+    public float distanciaSegura = 2.5f;
+
     // Diccionario para asociar nombre de waypoint y ángulo de rotación
     private Dictionary<string, float> waypointRotations = new Dictionary<string, float>();
 
     private Dictionary<int, string> waypointAltoPorSemaforo = new Dictionary<int, string>()
-{
-    {1, "chuy4"},
-    {2, "fer4"},
-    {3, "luis4"},
-    {4, "rich4"}
-};
+    {
+        {1, "chuy4"},
+        {2, "fer4"},
+        {3, "luis4"},
+        {4, "rich4"}
+    };
+
+    // Nuevo: referencia al Rigidbody
+    private Rigidbody rb;
+
+    void Awake()
+    {
+        // Añade Rigidbody kinemático y BoxCollider si no existen
+        rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true; // importante para moverlo manualmente
+        }
+
+        BoxCollider bc = GetComponent<BoxCollider>();
+        if (bc == null)
+        {
+            bc = gameObject.AddComponent<BoxCollider>();
+            bc.center = Vector3.up * 0.5f; // ajusta según altura del auto
+            bc.size = new Vector3(1f, 1f, 2f); // ajusta según tamaño del auto
+        }
+    }
 
     void Start()
     {
@@ -67,15 +91,29 @@ public class FollowWaypoints : MonoBehaviour
         }
 
         if (detenido) return;
-
         if (waypoints == null || waypoints.Length == 0) return;
 
         Transform target = waypoints[currentWaypoint];
+
+        // --- Nuevo: OverlapSphere para detectar autos delante ---
+        Vector3 puntoDelante = transform.position + transform.forward * distanciaSegura;
+        Collider[] hits = Physics.OverlapSphere(puntoDelante, 1f);
+        foreach (var hit in hits)
+        {
+            if (hit.CompareTag("Car") && hit.gameObject != gameObject)
+            {
+                detenido = true;
+                return;
+            }
+        }
+        detenido = false;
+
+        // Movimiento usando Rigidbody kinemático
         transform.position = Vector3.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
 
+        // Giro al llegar al waypoint
         if (Vector3.Distance(transform.position, target.position) < 0.1f)
         {
-            // Buscar si el nombre del waypoint está en el diccionario
             if (waypointRotations.ContainsKey(target.name))
             {
                 transform.Rotate(0, waypointRotations[target.name], 0);
@@ -83,24 +121,21 @@ public class FollowWaypoints : MonoBehaviour
             currentWaypoint++;
             if (currentWaypoint >= waypoints.Length)
             {
-                // Destruye el objeto al llegar al último waypoint
                 Destroy(gameObject);
             }
         }
     }
 
-    // Debes ajustar esta función para tu escena específica:
-    // Por ejemplo, si el waypoint 2 es el punto de alto para el semáforo de este path
     bool CercaDeLineaAlto()
-{
-    if (waypoints == null || waypoints.Length == 0) return false;
-    if (!waypointAltoPorSemaforo.ContainsKey(semaforoId)) return false;
-    string nombreAlto = waypointAltoPorSemaforo[semaforoId];
+    {
+        if (waypoints == null || waypoints.Length == 0) return false;
+        if (!waypointAltoPorSemaforo.ContainsKey(semaforoId)) return false;
+        string nombreAlto = waypointAltoPorSemaforo[semaforoId];
 
-    Transform altoTarget = System.Array.Find(waypoints, w => w.name == nombreAlto);
-    if (altoTarget == null) return false;
+        Transform altoTarget = System.Array.Find(waypoints, w => w.name == nombreAlto);
+        if (altoTarget == null) return false;
 
-    float distancia = Vector3.Distance(transform.position, altoTarget.position);
-    return distancia < 1.0f; // puedes ajustar el rango (ej: 0.5f o 1.5f)
-}
+        float distancia = Vector3.Distance(transform.position, altoTarget.position);
+        return distancia < 1.0f;
+    }
 }
