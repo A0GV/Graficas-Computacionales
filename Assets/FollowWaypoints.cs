@@ -19,6 +19,14 @@ public class FollowWaypoints : MonoBehaviour
     // Diccionario para asociar nombre de waypoint y ángulo de rotación
     private Dictionary<string, float> waypointRotations = new Dictionary<string, float>();
 
+    private Dictionary<int, string> waypointAltoPorSemaforo = new Dictionary<int, string>()
+{
+    {1, "chuy4"},
+    {2, "fer4"},
+    {3, "luis4"},
+    {4, "rich4"}
+};
+
     void Start()
     {
         semaforoCtrl = FindFirstObjectByType<SemaforoController>();
@@ -84,10 +92,15 @@ public class FollowWaypoints : MonoBehaviour
     // Debes ajustar esta función para tu escena específica:
     // Por ejemplo, si el waypoint 2 es el punto de alto para el semáforo de este path
     bool CercaDeLineaAlto()
-    {
-        // Ajusta el índice según tus rutas reales
-        // Ejemplo: return (currentWaypoint == 2);
-        // Si tienes una forma más precisa, usa la posición física o nombre del waypoint
-        return (currentWaypoint == 2);
-    }
+{
+    if (waypoints == null || waypoints.Length == 0) return false;
+    if (!waypointAltoPorSemaforo.ContainsKey(semaforoId)) return false;
+    string nombreAlto = waypointAltoPorSemaforo[semaforoId];
+
+    Transform altoTarget = System.Array.Find(waypoints, w => w.name == nombreAlto);
+    if (altoTarget == null) return false;
+
+    float distancia = Vector3.Distance(transform.position, altoTarget.position);
+    return distancia < 1.0f; // puedes ajustar el rango (ej: 0.5f o 1.5f)
+}
 }
