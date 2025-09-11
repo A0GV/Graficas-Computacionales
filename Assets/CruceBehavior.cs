@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Collections.Concurrent;
+
 public enum CruceEventType
 {
     CarSpawn,
@@ -18,23 +19,23 @@ public class CruceEvent
 public class CruceBehavior : MonoBehaviour
 {
     public TCPIPServerAsync server;
+    public SemaforoController semaforoController; // Asignar en el inspector o en Start()
 
     public List<GameObject> carPrefabs;
-
     public List<PathConfig> pathConfigs;
 
     private Dictionary<int, string> carTypes = new Dictionary<int, string>() {
         {1, "chuygarcia"}, {2, "chuyelizondo"}, {3, "chuycovarrubias"},
         {4, "fercantu"}, {5, "fercovarrubias"}, {6, "ferelizondo"},
         {7, "luisgarcia"}, {8, "luiscantu"}, {9, "luiscovarrubias"}, {10, "luiskiel"},
-        { 11, "richelizondo"}, {12, "richiegarcia"}, {13, "richcantu"}
+        {11, "richelizondo"}, {12, "richiegarcia"}, {13, "richcantu"}
     };
 
     private Dictionary<int, int> carStoplights = new Dictionary<int, int>() {
         {1, 1}, {2, 1}, {3, 1},
         {4, 2}, {5, 2}, {6, 2},
         {7, 3}, {8, 3}, {9, 3}, {10, 3},
-        { 11, 4}, {12, 4}, {13, 4}
+        {11, 4}, {12, 4}, {13, 4}
     };
 
     private ConcurrentQueue<CruceEvent> eventos = new ConcurrentQueue<CruceEvent>();
@@ -50,9 +51,10 @@ public class CruceBehavior : MonoBehaviour
         {
             server = FindFirstObjectByType<TCPIPServerAsync>();
         }
-        // Prueba: crear un cubo que siga el path 1 desde el origen
-        //SpawnCubeFromPathId(1, new Vector3(0, 0, 0));
-        //SpawnCarFromPathId(12, new Vector3(5829f, 0.0001460083f, 1038f));
+        if (semaforoController == null)
+        {
+            semaforoController = FindFirstObjectByType<SemaforoController>();
+        }
     }
 
     void Update()
@@ -66,38 +68,13 @@ public class CruceBehavior : MonoBehaviour
                     SpawnCarFromPathId(ev.pathId, Vector3.zero);
                     break;
                 case CruceEventType.SemaforoVerde:
-                    Debug.Log($"[EVENT] Cambiar semáforo a VERDE: {ev.semaforo}");
-                    SemaforoControl();
-                    // TODO: Lógica real para cambiar el semáforo en Unity
+                    if (semaforoController != null)
+                        semaforoController.CambiarAVerde(ev.semaforo);
                     break;
                 case CruceEventType.EarlySwitch:
                     Debug.Log($"[EVENT] Early switch a semáforo: {ev.semaforo}");
-                    SemaforoControl();
-                    // TODO: Lógica real para early switch
+                    // Si quieres hacer algo especial para early switch, agrégalo aquí
                     break;
-            }
-        }
-    }
-
-    // Ahora detenemos y avanzamos carros usando la bandera "detenido"
-    public void SemaforoControl()
-    {
-        CarBehaviour1[] allCars = FindObjectsByType<CarBehaviour1>(FindObjectsSortMode.None);
-        foreach (var car in allCars)
-        {
-            var mover = car.GetComponent<FollowWaypoints>();
-            if (mover != null)
-            {
-                // Ejemplo: detener solo los carros cuyo pathId corresponde al semáforo recibido
-                // Aquí puedes cambiar la lógica según el semáforo activo
-                if (car.pathId == 11) // <-- aquí puedes usar una variable para el semáforo activo
-                {
-                    mover.detenido = true;
-                }
-                else
-                {
-                    mover.detenido = false;
-                }
             }
         }
     }
@@ -157,7 +134,6 @@ public class CruceBehavior : MonoBehaviour
         if (carScript == null)
         {
             carScript = clon.AddComponent<CarBehaviour1>();
-            //Debug.LogWarning($"[AUTO] Se agregó CarBehaviour1 al carro instanciado {carType}");
         }
         carScript.pathId = pathId;
         carScript.nombre = carType;
@@ -170,9 +146,10 @@ public class CruceBehavior : MonoBehaviour
             FollowWaypoints fw = clon.GetComponent<FollowWaypoints>();
             if (fw != null)
             {
-                fw.waypoints = config.waypoints;   // asigna directamente desde el inspector
-                fw.speed = 1000;   // ejemplo dinámico
-                fw.detenido = false; // Asegúrate que el nuevo carro inicia en movimiento
+                fw.waypoints = config.waypoints;
+                fw.speed = 1000;
+                fw.detenido = false;
+                fw.semaforoId = carSL; // ¡IMPORTANTE!
             }
         }
         else

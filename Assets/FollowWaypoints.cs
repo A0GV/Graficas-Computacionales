@@ -10,11 +10,19 @@ public class FollowWaypoints : MonoBehaviour
     // Nueva bandera pública para detener el carro
     public bool detenido = false;
 
+    // Semáforo asignado a este carro
+    public int semaforoId;
+
+    // Referencia al controlador de semáforos
+    private SemaforoController semaforoCtrl;
+
     // Diccionario para asociar nombre de waypoint y ángulo de rotación
     private Dictionary<string, float> waypointRotations = new Dictionary<string, float>();
 
     void Start()
     {
+        semaforoCtrl = FindFirstObjectByType<SemaforoController>();
+
         // Agrega aquí los nombres y ángulos de rotación deseados
         waypointRotations.Add("luisder", 80f);
         waypointRotations.Add("luisizq", 260f);
@@ -40,7 +48,17 @@ public class FollowWaypoints : MonoBehaviour
 
     void Update()
     {
-        if (detenido) return; // Si está detenido, no se mueve
+        // --- LÓGICA DE SEMÁFORO ---
+        if (semaforoCtrl != null && !semaforoCtrl.PuedeAvanzar(semaforoId) && CercaDeLineaAlto())
+        {
+            detenido = true;
+        }
+        else
+        {
+            detenido = false;
+        }
+
+        if (detenido) return;
 
         if (waypoints == null || waypoints.Length == 0) return;
 
@@ -61,5 +79,15 @@ public class FollowWaypoints : MonoBehaviour
                 Destroy(gameObject);
             }
         }
+    }
+
+    // Debes ajustar esta función para tu escena específica:
+    // Por ejemplo, si el waypoint 2 es el punto de alto para el semáforo de este path
+    bool CercaDeLineaAlto()
+    {
+        // Ajusta el índice según tus rutas reales
+        // Ejemplo: return (currentWaypoint == 2);
+        // Si tienes una forma más precisa, usa la posición física o nombre del waypoint
+        return (currentWaypoint == 2);
     }
 }
